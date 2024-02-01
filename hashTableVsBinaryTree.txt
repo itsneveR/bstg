@@ -1,0 +1,35 @@
+https://cs.stackexchange.com/questions/270/hash-tables-versus-binary-trees
+
+A whole treatise could be written on this topic; I'm just going to cover some salient points, and I'll keep the discussion of other data structures to a minimum (there are many variants indeed). Throughout this answer, n
+ is the number of keys in the dictionary.
+
+The short answer is that hash tables are faster in most cases, but can be very bad at their worst. Search trees have many advantages, including tame worst-case behavior, but are somewhat slower in typical cases.
+
+Balanced binary search trees have a fairly uniform complexity: each element takes one node in the tree (typically 4 words of memory), and the basic operations (lookup, insertion, deletion) take O(lg(n))
+ time (guaranteed asymptotic upper bound). More precisely, an access in the tree takes about log2(n)
+ comparisons.
+
+Hash tables are a bit more variable. They require an array of around 2n
+ pointers. Access to one element depends on the quality of the hash function. The purpose of a hash function is to disperse the elements. A hash table “works” if all the elements you want to store in it have different hashes. If this is the case, then the basic operations (lookup, insertion, deletion) take O(1)
+ time, with a fairly small constant (one hash calculation plus one pointer lookup). This makes hash tables very fast in many typical cases.
+
+A general problem with hash tables is that the O(1)
+ complexity is not guaranteed.
+
+For addition, there's a point where the table becomes full; when that happens (or, better, a little before that happens), the table needs to be enlarged, which requires moving all of its elements, for an O(n)
+ cost. This can introduce “jerky” behavior when a lot of elements are added.
+It's possible for the input to collide over a few hash values. This rarely happens naturally, but it can be a security problem if the inputs are chosen by an attacker: it's a way to considerably slow down some servers. This issue has led some programming language implementations (such as Perl and Python) to switch from a plain old hash table to a hash function involving a random number chosen when the hash table is built, together with a hash function that spreads this random datum well (which increases the multiplicative constant in the O(1)
+), or to a binary search tree. While you can avoid collisions by using a cryptographic hash, this is not done in practice because cryptographic hashes are comparatively very slow to compute.
+When you throw data locality into the mix, hash tables do poorly. They work precisely because they store related elements far apart, which means that if the application looks up elements sharing a prefix in sequence, it will not benefit from cache effects. This is not relevant if the application makes essentially random lookups.
+
+Another factor in favor of search trees is that they're an immutable data structure: if you need to take a copy of a tree and change a few elements in it, you can share most of the data structure. If you take a copy of a hash table, you need to copy the whole array of pointers. Also, if you're working in a purely functional languages, hash tables are often not an option.
+
+When you go beyond strings, hash tables and binary search trees make different requirements on the data type of the key: hash tables require a hash function (a function from the keys to the integers such that k1≡k2⟹h(k1)=h(k2)
+, while binary search trees require a total order. Hashes can sometimes be cached, if there is enough room in the data structure where the key is stored; caching the result of comparisons (a binary operation) is often impractical. On the other hand, comparisons can benefit from shortcutting: if keys often differ within the first few bytes, a negative comparison can be very fast.
+
+In particular, if you're going to need the order on the keys, for example if you want to be able to list the keys in alphabetical order, then hash tables are no help (you'll need to sort them), whereas you can straightforwardly traverse a search tree in order.
+
+You can combine binary search trees and hash tables in the form of hash trees. A hash tree stores keys in a search tree according to their hash. This is useful, for example, in a purely functional programming language where you want to work on data that does not have an easy-to-compute order relation.
+
+When the keys are strings (or integers), a trie can be another option. A trie is a tree, but indexed differently from a search tree: you write the key in binary, and go left for a 0 and right for a 1. The cost of an access is thus proportional to the length of the key. Tries can be compressed to remove intermediate nodes; this is known as a patricia trie or radix tree. Radix trees can outperform balanced trees, particularly when many keys share a common prefix.
+
